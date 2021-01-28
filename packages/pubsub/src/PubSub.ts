@@ -91,7 +91,7 @@ export class PubSubClass {
 
 		this._options = Object.assign({}, this._options, opt);
 
-		this._pluggables.map(pluggable => pluggable.configure(this._options));
+		this._pluggables.map((pluggable) => pluggable.configure(this._options));
 
 		return this._options;
 	}
@@ -102,7 +102,11 @@ export class PubSubClass {
 	 */
 	public async addPluggable(pluggable: PubSubProvider) {
 		if (pluggable && pluggable.getCategory() === 'PubSub') {
-			this._pluggables.push(pluggable);
+			// PATCH: Only allowing single plug in to avoid socket issue
+			console.log(
+				'PubSub: Patched: Only allowing single plug in to avoid socket issue'
+			);
+			this._pluggables = [pluggable];
 
 			const config = pluggable.configure(this._options);
 
@@ -119,7 +123,7 @@ export class PubSubClass {
 		}
 
 		return this._pluggables.find(
-			pluggable => pluggable.getProviderName() === providerName
+			(pluggable) => pluggable.getProviderName() === providerName
 		);
 	}
 
@@ -143,7 +147,7 @@ export class PubSubClass {
 		options?: ProvidertOptions
 	) {
 		return Promise.all(
-			this.getProviders(options).map(provider =>
+			this.getProviders(options).map((provider) =>
 				provider.publish(topics, msg, options)
 			)
 		);
@@ -163,8 +167,8 @@ export class PubSubClass {
 
 		const providers = this.getProviders(options);
 
-		return new Observable(observer => {
-			const observables = providers.map(provider => ({
+		return new Observable((observer) => {
+			const observables = providers.map((provider) => ({
 				provider,
 				observable: provider.subscribe(topics, options),
 			}));
@@ -172,14 +176,14 @@ export class PubSubClass {
 			const subscriptions = observables.map(({ provider, observable }) =>
 				observable.subscribe({
 					start: console.error,
-					next: value => observer.next({ provider, value }),
-					error: error => observer.error({ provider, error }),
+					next: (value) => observer.next({ provider, value }),
+					error: (error) => observer.error({ provider, error }),
 					// complete: observer.complete, // TODO: when all completed, complete the outer one
 				})
 			);
 
 			return () =>
-				subscriptions.forEach(subscription => subscription.unsubscribe());
+				subscriptions.forEach((subscription) => subscription.unsubscribe());
 		});
 	}
 }
